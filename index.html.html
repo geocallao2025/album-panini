@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Álbum Panini FIFA 2026 - Control de Figuritas</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow-x: auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #ffd700;
+            text-shadow: 2px 2px 0 #2a5298;
+            margin-top: 0;
+            font-size: 1.8rem;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: #f0f2f5;
+            border-radius: 50px;
+        }
+        button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            touch-action: manipulation;
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+        button.report-btn {
+            background: #ff9800;
+            color: #1e3c72;
+        }
+        button.export-btn {
+            background: #4caf50;
+        }
+        button.import-btn {
+            background: #2196f3;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            background: #e8f0fe;
+            border-radius: 20px;
+            margin: 10px 0;
+        }
+        .album-table {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 800px;
+        }
+        th {
+            background: #ffd700;
+            color: #1e3c72;
+            padding: 12px 6px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            border: 1px solid #ddd;
+            text-align: center;
+            padding: 8px 4px;
+            background-color: white;
+            transition: background 0.2s;
+        }
+        .country-row td:first-child {
+            background: #f8f9fa;
+            font-weight: bold;
+            text-align: left;
+            position: sticky;
+            left: 0;
+            background-color: #ffd;
+        }
+        .sticker-cell {
+            cursor: pointer;
+            font-size: 1.3rem;
+            font-weight: bold;
+            touch-action: manipulation;
+        }
+        .sticker-cell:active {
+            background-color: #ccc;
+        }
+        .empty {
+            background-color: #fafafa;
+            color: #aaa;
+        }
+        .have {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+        .duplicate {
+            background-color: #ffecb3;
+            color: #e65100;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .legend span {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            margin-top: 20px;
+            color: #666;
+        }
+        .warning-note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 8px 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #856404;
+        }
+        @media (max-width: 700px) {
+            .container {
+                padding: 10px;
+            }
+            button {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+            }
+            td, th {
+                padding: 6px 2px;
+                font-size: 11px;
+            }
+            .sticker-cell {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⚽ Álbum Panini FIFA 2026 📸</h1>
+    
+    <div class="toolbar">
+        <button id="reportBtn" class="report-btn">📊 Reporte de Repetidas</button>
+        <button id="exportDataBtn" class="export-btn">💾 Exportar Datos</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" />
+        <button id="importDataBtn" class="import-btn">📂 Importar Datos</button>
+    </div>
+    
+    <div class="warning-note">
+        ⚠️ Los datos se guardan automáticamente en tu navegador. Usa "Exportar Datos" para hacer respaldos o compartir con otras personas.
+    </div>
+    
+    <div class="status" id="statusMsg">
+        💡 Toca cualquier casilla: Vacío → Tengo → Repetida → Vacío
+    </div>
+    
+    <div class="album-table" id="albumTableContainer">
+        <!-- Tabla generada dinámicamente -->
+    </div>
+    
+    <div class="legend">
+        <div><span style="background:#fafafa; border:1px solid #ccc;"></span> Vacío (Falta)</div>
+        <div><span style="background:#c8e6c9;"></span> ✅ Tengo</div>
+        <div><span style="background:#ffecb3;"></span> 🔁 Repetida (Duplicada)</div>
+    </div>
+    <div class="footer">
+        ✅ Compatible con móvil. Comparte el archivo JSON con tus amigos para mantener el álbum sincronizado.
+    </div>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // DATOS - 48 países desde el Excel
+    // --------------------------------------------------------------
+    const paisesDataRaw = [
+        { nombre: "MEXICO", grupo: "A" },
+        { nombre: "SUDAFRICA", grupo: "A" },
+		{ nombre: "KOREA", grupo: "A" },
+		{ nombre: "REP. CHECA", grupo: "A" },
+		{ nombre: "CANADA", grupo: "B" },
+		{ nombre: "BOSNIA HERZEGOVINA", grupo: "B" },
+		{ nombre: "QATAR", grupo: "B" },
+		{ nombre: "SUIZA", grupo: "B" },
+		{ nombre: "BRASIL", grupo: "C" },
+		{ nombre: "MARRUECOS", grupo: "C" },
+		{ nombre: "HAITI", grupo: "C" },
+		{ nombre: "ESCOCIA", grupo: "C" },
+		{ nombre: "USA", grupo: "D" },
+		{ nombre: "PARAGUAY", grupo: "D" },
+		{ nombre: "AUSTRALIA", grupo: "D" },
+		{ nombre: "TURQUIA", grupo: "D" },
+		{ nombre: "GERMANY", grupo: "E" },
+		{ nombre: "CURACAO", grupo: "E" },
+        { nombre: "COSTA DE MARFIL", grupo: "E" },
+        { nombre: "ECUADOR", grupo: "E" },
+		{ nombre: "NETHERLANDS", grupo: "F" },
+		{ nombre: "JAPON", grupo: "F" },
+		{ nombre: "SUECIA", grupo: "F" },
+        { nombre: "TUNEZ", grupo: "F" },
+		{ nombre: "BELGICA", grupo: "G" },
+		{ nombre: "EGIPTO", grupo: "G" },
+		{ nombre: "IRAN", grupo: "G" },
+		{ nombre: "NUEVA ZELANDA", grupo: "G" },
+		{ nombre: "SPAIN", grupo: "H" },
+		{ nombre: "CABO VERDE", grupo: "H" },
+		{ nombre: "ARABIA SAUDI", grupo: "H" },
+		{ nombre: "URUGUAY", grupo: "H" },
+		{ nombre: "FRANCIA", grupo: "I" },
+		{ nombre: "SENEGAL", grupo: "I" },
+		{ nombre: "IRAQ", grupo: "I" },
+		{ nombre: "NORUEGA", grupo: "I" },
+        { nombre: "ARGENTINA", grupo: "J" },
+		{ nombre: "ALGERIA", grupo: "J" },
+        { nombre: "AUSTRIA", grupo: "J" },
+		{ nombre: "JORDANIA", grupo: "J" },
+        { nombre: "PORTUGAL", grupo: "K" },
+        { nombre: "CONGO", grupo: "K" },
+		{ nombre: "UZBEKISTAN", grupo: "K" },
+		{ nombre: "COLOMBIA", grupo: "K" },
+        { nombre: "ENGLAND", grupo: "L" },
+		{ nombre: "CROACIA", grupo: "L" },
+        { nombre: "GHANA", grupo: "L" },       
+        { nombre: "PANAMA", grupo: "L" }
+       
+    ];
+
+    // Estados: 0=vacío, 1=tengo, 2=repetida
+    let stickersState = {};
+
+    function initEmptyStates() {
+        for (let pais of paisesDataRaw) {
+            stickersState[pais.nombre] = Array(20).fill(0);
+        }
+    }
+
+    // Cargar desde localStorage
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem("panini2026_data");
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                let valid = true;
+                for (let pais of paisesDataRaw) {
+                    if (!parsed[pais.nombre] || !Array.isArray(parsed[pais.nombre]) || parsed[pais.nombre].length !== 20) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid) {
+                    stickersState = parsed;
+                } else {
+                    initEmptyStates();
+                }
+            } catch(e) { 
+                initEmptyStates();
+            }
+        } else {
+            initEmptyStates();
+        }
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem("panini2026_data", JSON.stringify(stickersState));
+    }
+
+    function renderAlbum() {
+        const container = document.getElementById("albumTableContainer");
+        if (!container) return;
+        
+        let html = '<table id="albumTable">';
+        html += '<thead><tr><th>País / Grupo</th>';
+        for (let i = 1; i <= 20; i++) {
+            html += `<th>${i}</th>`;
+        }
+        html += '</tr></thead><tbody>';
+        
+        for (let pais of paisesDataRaw) {
+            const grupo = pais.grupo ? ` (${pais.grupo})` : "";
+            html += `<tr class="country-row" data-pais="${pais.nombre}">`;
+            html += `<td style="font-weight:bold;">${pais.nombre}${grupo}</td>`;
+            const stickers = stickersState[pais.nombre];
+            for (let num = 0; num < 20; num++) {
+                const estado = stickers[num];
+                let clase = "empty";
+                let simbolo = "◻️";
+                if (estado === 1) {
+                    clase = "have";
+                    simbolo = "✅";
+                } else if (estado === 2) {
+                    clase = "duplicate";
+                    simbolo = "🔁";
+                }
+                html += `<td class="sticker-cell ${clase}" data-pais="${pais.nombre}" data-numero="${num+1}">${simbolo}</td>`;
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        attachCellEvents();
+    }
+    
+    function nextState(currentState) {
+        if (currentState === 0) return 1;
+        if (currentState === 1) return 2;
+        return 0;
+    }
+    
+    function attachCellEvents() {
+        const cells = document.querySelectorAll('.sticker-cell');
+        cells.forEach(cell => {
+            cell.removeEventListener('click', cellClickHandler);
+            cell.addEventListener('click', cellClickHandler);
+        });
+    }
+    
+    function cellClickHandler(e) {
+        const cell = e.currentTarget;
+        const pais = cell.getAttribute('data-pais');
+        const numero = parseInt(cell.getAttribute('data-numero'));
+        if (!pais || isNaN(numero)) return;
+        
+        const currentEstado = stickersState[pais][numero-1];
+        const newEstado = nextState(currentEstado);
+        stickersState[pais][numero-1] = newEstado;
+        
+        let simbolo = "";
+        let clase = "";
+        if (newEstado === 1) {
+            simbolo = "✅";
+            clase = "have";
+        } else if (newEstado === 2) {
+            simbolo = "🔁";
+            clase = "duplicate";
+        } else {
+            simbolo = "◻️";
+            clase = "empty";
+        }
+        cell.textContent = simbolo;
+        cell.className = `sticker-cell ${clase}`;
+        
+        saveToLocalStorage();
+        
+        const msgDiv = document.getElementById("statusMsg");
+        if (msgDiv) {
+            let texto = "";
+            if (newEstado === 1) texto = `✅ ${pais} - N°${numero}: Tengo`;
+            else if (newEstado === 2) texto = `🔁 ${pais} - N°${numero}: Repetida`;
+            else texto = `⬜ ${pais} - N°${numero}: Vacío`;
+            msgDiv.textContent = texto;
+            setTimeout(() => {
+                if (document.getElementById("statusMsg") && document.getElementById("statusMsg").textContent === texto) {
+                    document.getElementById("statusMsg").textContent = "💡 Toca cualquier casilla: Vacío → Tengo → Repetida → Vacío";
+                }
+            }, 1500);
+        }
+    }
+    
+    function generateReport() {
+        let report = "📋 REPORTE DE FIGURITAS REPETIDAS (DUPLICADAS)\n";
+        report += "=============================================\n";
+        let totalRepe = 0;
+        let hasAny = false;
+        let reportDetails = [];
+        
+        for (let pais of paisesDataRaw) {
+            const stickers = stickersState[pais.nombre];
+            const repetidos = [];
+            for (let i = 0; i < 20; i++) {
+                if (stickers[i] === 2) {
+                    repetidos.push(i+1);
+                }
+            }
+            if (repetidos.length > 0) {
+                hasAny = true;
+                totalRepe += repetidos.length;
+                reportDetails.push(`🏷️ ${pais.nombre}${pais.grupo ? ` (Grupo ${pais.grupo})` : ''}: ${repetidos.length} repetida(s) - Números: ${repetidos.join(", ")}`);
+            }
+        }
+        
+        if (!hasAny) {
+            report += "\n✨ ¡No hay figuritas repetidas en tu colección! ✨\n";
+            report += "\n💪 ¡Sigue así!";
+        } else {
+            report += "\n" + reportDetails.join("\n\n");
+            report += `\n\n📊 TOTAL DE FIGURITAS REPETIDAS: ${totalRepe}`;
+            report += `\n📈 Total de países con repetidas: ${reportDetails.length}`;
+        }
+        
+        alert(report);
+        console.log(report);
+    }
+    
+    function exportData() {
+        const dataStr = JSON.stringify(stickersState, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `panini2026_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert("📁 Datos exportados correctamente.\n\nComparte este archivo con tus amigos para que actualicen el álbum.");
+    }
+    
+    function importData(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                let valid = true;
+                for (let pais of paisesDataRaw) {
+                    if (!imported[pais.nombre] || !Array.isArray(imported[pais.nombre]) || imported[pais.nombre].length !== 20) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid) {
+                    stickersState = imported;
+                    saveToLocalStorage();
+                    renderAlbum();
+                    alert("✅ Datos importados correctamente. Álbum actualizado.");
+                    document.getElementById("statusMsg").textContent = "📥 Datos compartidos cargados exitosamente.";
+                    setTimeout(() => {
+                        if (document.getElementById("statusMsg").textContent.includes("cargados"))
+                            document.getElementById("statusMsg").textContent = "💡 Toca cualquier casilla: Vacío → Tengo → Repetida → Vacío";
+                    }, 2000);
+                } else {
+                    alert("❌ Archivo inválido: no coincide con la estructura del álbum.\n\nAsegúrate de importar un archivo exportado desde esta misma aplicación.");
+                }
+            } catch(err) {
+                alert("❌ Error al leer el archivo JSON. Asegúrate de que sea un archivo válido.");
+            }
+        };
+        reader.readAsText(file);
+    }
+    
+    // Inicialización
+    document.addEventListener("DOMContentLoaded", () => {
+        loadFromLocalStorage();
+        renderAlbum();
+        
+        document.getElementById("reportBtn").addEventListener("click", generateReport);
+        document.getElementById("exportDataBtn").addEventListener("click", exportData);
+        
+        const importFileInput = document.getElementById("importFile");
+        document.getElementById("importDataBtn").addEventListener("click", () => {
+            importFileInput.click();
+        });
+        importFileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+                importData(e.target.files[0]);
+                importFileInput.value = '';
+            }
+        });
+    });
+</script>
+</body>
+</html>
