@@ -54,7 +54,7 @@
             border: none;
             padding: 10px 20px;
             border-radius: 40px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -68,11 +68,14 @@
             background: #ff9800;
             color: #1e3c72;
         }
-        button.export-btn {
+        button.export-json-btn {
             background: #4caf50;
         }
-        button.import-btn {
+        button.export-txt-btn {
             background: #2196f3;
+        }
+        button.import-btn {
+            background: #9c27b0;
         }
         .stats {
             text-align: center;
@@ -185,7 +188,6 @@
             font-size: 11px;
         }
         
-        /* Fijar primera columna correctamente */
         .album-table-wrapper table th:first-child,
         .album-table-wrapper table td:first-child {
             position: sticky;
@@ -204,8 +206,8 @@
                 padding: 10px;
             }
             button {
-                padding: 8px 14px;
-                font-size: 0.75rem;
+                padding: 8px 12px;
+                font-size: 0.7rem;
             }
             td, th {
                 padding: 4px 2px;
@@ -227,7 +229,8 @@
     
     <div class="toolbar">
         <button id="reportBtn" class="report-btn">📊 Reporte</button>
-        <button id="exportDataBtn" class="export-btn">💾 Exportar JSON</button>
+        <button id="exportTxtBtn" class="export-txt-btn">📄 Exportar TXT (Legible)</button>
+        <button id="exportJsonBtn" class="export-json-btn">💾 Exportar JSON (Respaldo)</button>
         <input type="file" id="importFile" accept=".json" style="display:none" />
         <button id="importDataBtn" class="import-btn">📂 Importar Datos</button>
     </div>
@@ -237,7 +240,7 @@
     </div>
     
     <div class="warning-note">
-        ⚠️ Datos automáticos. Exporta para respaldos.<br>
+        ⚠️ Datos automáticos. Exporta TXT para ver tu progreso fácilmente | JSON para respaldos<br>
         📊 48 países | 20 c/u | 960 total
     </div>
     
@@ -373,7 +376,89 @@
         }
     }
 
-    function exportDataLegible() {
+    // NUEVA FUNCIÓN: Exportar a TXT legible (formato por filas)
+    function exportToTxt() {
+        let txtContent = "========================================\n";
+        txtContent += "ÁLBUM PANINI FIFA WORLD CUP 2026\n";
+        txtContent += `Fecha: ${new Date().toLocaleString()}\n`;
+        txtContent += `Total países: ${paisesDataRaw.length}\n`;
+        txtContent += `Figuritas por país: 20\n`;
+        txtContent += `Total figuritas: ${paisesDataRaw.length * 20}\n`;
+        txtContent += "========================================\n\n";
+        txtContent += "LEYENDA:\n";
+        txtContent += "  [ ] = Vacío (falta)\n";
+        txtContent += "  [T] = Tengo\n";
+        txtContent += "  [R] = Repetida\n\n";
+        txtContent += "========================================\n";
+        txtContent += "LISTADO DE FIGURITAS POR PAÍS\n";
+        txtContent += "========================================\n\n";
+        
+        let totalTenidasGlobal = 0;
+        let totalRepetidasGlobal = 0;
+        
+        for (let pais of paisesDataRaw) {
+            const stickers = stickersState[pais.nombre];
+            const tenidas = stickers.filter(v => v === 1).length;
+            const repetidas = stickers.filter(v => v === 2).length;
+            const faltantes = stickers.filter(v => v === 0).length;
+            
+            totalTenidasGlobal += tenidas;
+            totalRepetidasGlobal += repetidas;
+            
+            txtContent += `📌 ${pais.nombre} (Grupo ${pais.grupo})\n`;
+            txtContent += `   Tenidas: ${tenidas} | Repetidas: ${repetidas} | Faltantes: ${faltantes}\n`;
+            
+            // Mostrar las figuritas en grupos de 10 para mejor legibilidad
+            let linea1 = "   Números: ";
+            let linea2 = "   Estado:  ";
+            
+            for (let i = 0; i < stickers.length; i++) {
+                const num = i + 1;
+                linea1 += `${num.toString().padStart(2, ' ')} `;
+                
+                if (stickers[i] === 1) linea2 += " T  ";
+                else if (stickers[i] === 2) linea2 += " R  ";
+                else linea2 += " .  ";
+                
+                // Salto de línea cada 10 números
+                if ((i + 1) % 10 === 0 && i < 19) {
+                    linea1 += "\n          ";
+                    linea2 += "\n          ";
+                }
+            }
+            
+            txtContent += linea1 + "\n";
+            txtContent += linea2 + "\n";
+            txtContent += "   ( . = Vacío | T = Tengo | R = Repetida )\n";
+            txtContent += "\n";
+        }
+        
+        txtContent += "========================================\n";
+        txtContent += "RESUMEN GLOBAL\n";
+        txtContent += "========================================\n";
+        txtContent += `✅ Total figuritas que TIENES: ${totalTenidasGlobal}\n`;
+        txtContent += `🔁 Total figuritas REPETIDAS: ${totalRepetidasGlobal}\n`;
+        txtContent += `⬜ Total figuritas FALTANTES: ${(paisesDataRaw.length * 20) - totalTenidasGlobal - totalRepetidasGlobal}\n`;
+        txtContent += `📊 Avance: ${Math.round((totalTenidasGlobal / (paisesDataRaw.length * 20)) * 100)}%\n`;
+        txtContent += "========================================\n";
+        txtContent += "Exportado desde Álbum Panini FIFA 2026\n";
+        
+        // Descargar archivo TXT
+        const blob = new Blob([txtContent], {type: "text/plain;charset=utf-8"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `panini2026_resumen_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert("✅ Archivo TXT exportado correctamente.\n\nÁbrelo con cualquier editor de texto (Bloc de notas, Word, etc.)");
+    }
+
+    // Exportar JSON (para respaldo y compartir entre usuarios)
+    function exportToJson() {
         const exportData = {};
         
         for (let pais of paisesDataRaw) {
@@ -415,12 +500,12 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `panini2026_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+        a.download = `panini2026_respaldo_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        alert(`✅ Exportado: ${paisesDataRaw.length} países, ${paisesDataRaw.length * 20} figuritas`);
+        alert(`✅ JSON exportado correctamente (para respaldos y compartir entre usuarios)`);
     }
     
     function importData(file) {
@@ -463,7 +548,7 @@
                     document.getElementById("statusMsg").textContent = "💡 Toca casilla: Vacío → Tengo → Repetida";
                 }, 2000);
             } catch(err) {
-                alert("❌ Archivo inválido");
+                alert("❌ Archivo inválido. Usa un JSON exportado desde esta aplicación.");
             }
         };
         reader.readAsText(file);
@@ -600,7 +685,8 @@
         renderAlbum();
         
         document.getElementById("reportBtn").addEventListener("click", generateReport);
-        document.getElementById("exportDataBtn").addEventListener("click", exportDataLegible);
+        document.getElementById("exportTxtBtn").addEventListener("click", exportToTxt);
+        document.getElementById("exportJsonBtn").addEventListener("click", exportToJson);
         
         const importFileInput = document.getElementById("importFile");
         document.getElementById("importDataBtn").addEventListener("click", () => {
